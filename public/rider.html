@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="description" content="Voice-based ride booking for visually impaired users" />
+  <title>Voice Ride — Book a Ride</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="/css/rider.css" />
+</head>
+<body>
+  <!-- ── Full-screen map background ─────────────────────── -->
+  <div id="map" role="img" aria-label="Map showing your location and ride route"></div>
+
+  <!-- ── Grain texture overlay ──────────────────────────── -->
+  <div class="grain-overlay" aria-hidden="true"></div>
+
+  <!-- ── Sonar ripple container ─────────────────────────── -->
+  <div id="ripple-container" aria-hidden="true"></div>
+
+  <!-- ── Wallet badge (top-right) ───────────────────────── -->
+  <div id="wallet-badge" class="wallet-badge" role="status" aria-label="Wallet balance" aria-live="polite">
+    <span class="wallet-icon">₹</span>
+    <span id="wallet-amount" class="wallet-amount">500</span>
+  </div>
+
+  <!-- ── Offline banner ─────────────────────────────────── -->
+  <div id="offline-banner" class="offline-banner" role="alert" aria-live="assertive" style="display:none;">
+    <span>⚡ You are offline</span>
+  </div>
+
+  <!-- ── Main interaction overlay ───────────────────────── -->
+  <div id="main-overlay" class="main-overlay" role="main" aria-label="Tap anywhere to begin booking a ride">
+
+    <!-- Status text area -->
+    <div id="status-area" class="status-area" role="status" aria-live="assertive">
+      <div id="status-icon" class="status-icon">
+        <div class="pulse-dot" id="pulse-dot"></div>
+      </div>
+      <h1 id="status-heading" class="status-heading">Detecting your location…</h1>
+      <p id="status-text" class="status-text">Please wait</p>
+    </div>
+
+    <!-- Listening waveform -->
+    <div id="waveform" class="waveform" aria-hidden="true" style="display:none;">
+      <div class="wave-bar" style="--i:1"></div>
+      <div class="wave-bar" style="--i:2"></div>
+      <div class="wave-bar" style="--i:3"></div>
+      <div class="wave-bar" style="--i:4"></div>
+      <div class="wave-bar" style="--i:5"></div>
+    </div>
+
+    <!-- Loading spinner -->
+    <div id="spinner" class="spinner" aria-label="Loading" style="display:none;">
+      <div class="spinner-arc"></div>
+    </div>
+
+    <!-- Driver info card (hidden until driver accepted) -->
+    <div id="driver-card" class="driver-card" role="alert" aria-live="assertive" style="display:none;">
+      <div class="driver-card-inner">
+        <div class="driver-avatar">🚗</div>
+        <div class="driver-info">
+          <span class="driver-name" id="driver-name"></span>
+          <span class="driver-eta" id="driver-eta"></span>
+        </div>
+        <div class="driver-fare" id="driver-fare"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Bottom status strip ────────────────────────────── -->
+  <div id="bottom-strip" class="bottom-strip" role="status" aria-live="polite">
+    <span id="bottom-text" class="bottom-text">TAP ANYWHERE TO BEGIN</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/voice.js"></script>
+  <script src="/js/map.js"></script>
+  <script src="/js/socket.js"></script>
+  <script src="/js/wallet.js"></script>
+  <script src="/js/rider.js"></script>
+</body>
+</html>

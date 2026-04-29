@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="description" content="Driver interface for accepting ride requests" />
+  <title>Voice Ride — Driver Dashboard</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="/css/driver.css" />
+</head>
+<body>
+  <div class="driver-container" role="main">
+
+    <!-- ── Header ──────────────────────────────────────── -->
+    <header class="driver-header">
+      <h1 class="driver-title">
+        <span class="title-icon">🚘</span>
+        Driver Dashboard
+      </h1>
+      <div id="connection-status" class="connection-dot connected" role="status" aria-label="Connected to server">
+        <span class="dot"></span>
+        <span class="conn-text">Connected</span>
+      </div>
+    </header>
+
+    <!-- ── Waiting state ───────────────────────────────── -->
+    <div id="waiting-state" class="waiting-state" role="status" aria-live="polite">
+      <div class="waiting-icon">
+        <div class="radar-ring ring-1"></div>
+        <div class="radar-ring ring-2"></div>
+        <div class="radar-ring ring-3"></div>
+        <div class="radar-dot"></div>
+      </div>
+      <h2 class="waiting-text">Waiting for ride requests…</h2>
+      <p class="waiting-sub">You'll be notified when a rider needs a ride</p>
+    </div>
+
+    <!-- ── Ride request card ───────────────────────────── -->
+    <div id="ride-card" class="ride-card" role="alert" aria-live="assertive" style="display:none;">
+      <div class="card-header">
+        <span class="card-badge">NEW RIDE REQUEST</span>
+      </div>
+
+      <div class="card-body">
+        <div class="route-info">
+          <div class="route-point">
+            <div class="route-dot pickup-dot"></div>
+            <div class="route-detail">
+              <span class="route-label">PICKUP</span>
+              <span class="route-address" id="pickup-address">—</span>
+            </div>
+          </div>
+          <div class="route-line"></div>
+          <div class="route-point">
+            <div class="route-dot dest-dot"></div>
+            <div class="route-detail">
+              <span class="route-label">DESTINATION</span>
+              <span class="route-address" id="dest-address">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-value" id="ride-distance">—</span>
+            <span class="stat-label">KM</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <span class="stat-value" id="ride-fare">—</span>
+            <span class="stat-label">FARE (₹)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Mini map ──────────────────────────────────── -->
+      <div id="driver-map" class="driver-map" role="img" aria-label="Map showing pickup and destination"></div>
+
+      <!-- ── Action buttons ────────────────────────────── -->
+      <div class="card-actions">
+        <button id="btn-accept" class="btn btn-accept" aria-label="Accept this ride">
+          <span class="btn-icon">✅</span>
+          ACCEPT
+        </button>
+        <button id="btn-reject" class="btn btn-reject" aria-label="Reject this ride">
+          <span class="btn-icon">❌</span>
+          REJECT
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Ride active state ───────────────────────────── -->
+    <div id="ride-active" class="ride-active" role="status" aria-live="polite" style="display:none;">
+      <div class="active-icon">🚗</div>
+      <h2 class="active-title">Ride in Progress</h2>
+      <p class="active-text" id="active-text">Heading to pickup location…</p>
+      <div id="active-map" class="driver-map" role="img" aria-label="Map showing ride progress"></div>
+      <button id="btn-end-ride" class="btn btn-end" aria-label="End this ride">
+        END RIDE
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/socket.js"></script>
+  <script src="/js/driver.js"></script>
+</body>
+</html>

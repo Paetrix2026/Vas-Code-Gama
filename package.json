@@ -1,0 +1,22 @@
+{
+  "name": "voice-ride-app",
+  "version": "1.0.0",
+  "description": "AI Voice-Based Ride Booking System for Visually Impaired Users",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "multer": "^2.1.1",
+    "node-fetch": "^3.3.2",
+    "node-forge": "^1.4.0",
+    "qrcode": "^1.5.4",
+    "selfsigned": "^5.5.0",
+    "ws": "^8.14.2"
+  }
+}
