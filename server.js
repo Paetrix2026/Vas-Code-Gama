@@ -12,12 +12,31 @@ import multer from 'multer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync, existsSync } from 'fs';
+import { networkInterfaces } from 'os';
+import Groq from 'groq-sdk';
+import QRCode from 'qrcode';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
 const server = createServer(app);
+
+// Initialize Groq if key exists
+const groq = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
+
+// Helper to get local IP
+function getLocalIP() {
+  const nets = networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'localhost';
+}
 
 // HTTPS server for mobile (geolocation/mic require secure context)
 let httpsServer = null;
@@ -93,6 +112,28 @@ app.post('/api/end-ride', (_req, res) => {
   res.json({ status: 'ride_ended' });
 });
 
+// Dynamic QR Generator
+app.get('/api/generate-qr', async (req, res) => {
+  const { type } = req.query; // 'rider' or 'driver'
+  const ip = getLocalIP();
+  const port = 3443;
+  const url = `https://${ip}:${port}/${type}.html`;
+
+  try {
+    const qrImage = await QRCode.toBuffer(url, {
+      margin: 1,
+      width: 400,
+      color: {
+        dark: '#000000',
+        light: '#ffffff',
+      },
+    });
+    res.type('png').send(qrImage);
+  } catch (err) {
+    res.status(500).send('QR Generation failed');
+  }
+});
+
 // Proxy endpoint for Mistral AI (keeps API key server-side)
 app.post('/api/process-speech', async (req, res) => {
   const { transcript } = req.body;
@@ -132,13 +173,43 @@ app.post('/api/process-speech', async (req, res) => {
     });
 
     clearTimeout(timeout);
+    
+    if (!response.ok) {
+      throw new Error(`Mistral API error: ${response.status}`);
+    }
+
     const data = await response.json();
     console.log('[Mistral] Response:', data.choices?.[0]?.message?.content);
     const destination = data.choices?.[0]?.message?.content?.trim() || transcript.trim();
     res.json({ destination });
   } catch (err) {
     console.error('[Mistral] Error:', err.message);
-    // Fallback: clean up manually
+
+    // Groq Fallback
+    if (groq) {
+      try {
+        console.log('[Groq] Falling back for LLM...');
+        const completion = await groq.chat.completions.create({
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a ride booking assistant in India. Extract ONLY the destination location name from the user\'s speech. Fix common spelling mistakes for Indian places (e.g. "mangalor" → "Mangalore"). Return ONLY the corrected place name. No punctuation, no quotes, no explanation.',
+            },
+            { role: 'user', content: transcript },
+          ],
+          model: 'llama3-8b-8192',
+          temperature: 0.1,
+          max_tokens: 60,
+        });
+        const destination = completion.choices[0]?.message?.content?.trim() || transcript.trim();
+        console.log('[Groq] Response:', destination);
+        return res.json({ destination });
+      } catch (groqErr) {
+        console.error('[Groq] Fallback failed:', groqErr.message);
+      }
+    }
+
+    // Manual Fallback: clean up manually
     const cleaned = transcript.trim().replace(/^(go to|take me to|i want to go to|drive me to|navigate to)\s*/i, '');
     res.json({ destination: cleaned || transcript.trim() });
   }
@@ -176,7 +247,7 @@ app.post('/api/sarvam-stt', upload.single('file'), async (req, res) => {
     if (!response.ok) {
       const errText = await response.text();
       console.error('[Sarvam STT] API error:', response.status, errText);
-      return res.status(response.status).json({ error: 'Sarvam STT failed', detail: errText });
+      throw new Error(`Sarvam STT failed: ${response.status}`);
     }
 
     const data = await response.json();
@@ -184,6 +255,24 @@ app.post('/api/sarvam-stt', upload.single('file'), async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error('[Sarvam STT] Error:', err.message);
+
+    // Groq Whisper Fallback
+    if (groq && req.file) {
+      try {
+        console.log('[Groq] Falling back for STT (Whisper)...');
+        // Convert buffer to file-like object for Groq
+        const transcription = await groq.audio.transcriptions.create({
+          file: new File([req.file.buffer], 'audio.webm', { type: 'audio/webm' }),
+          model: 'whisper-large-v3',
+          language: 'en', // Groq Whisper works best with ISO codes
+        });
+        console.log('[Groq STT] Result:', transcription.text);
+        return res.json({ transcript: transcription.text });
+      } catch (groqErr) {
+        console.error('[Groq STT] Fallback failed:', groqErr.message);
+      }
+    }
+
     res.status(500).json({ error: 'Sarvam STT failed' });
   }
 });
